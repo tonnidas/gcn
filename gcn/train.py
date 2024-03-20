@@ -22,7 +22,7 @@ tf.set_random_seed(seed)
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
-flags.DEFINE_string('model', 'gcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
+flags.DEFINE_string('model', 'gcn_khop', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 16, 'Number of units in hidden layer 1.')
@@ -31,11 +31,13 @@ flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix
 flags.DEFINE_integer('early_stopping', 10, 'Tolerance for early stopping (# of epochs).')
 flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
 
+debugPrint(FLAGS.dataset, FLAGS.model, FLAGS.learning_rate, FLAGS.epochs, FLAGS.hidden1, FLAGS.dropout, FLAGS.weight_decay, FLAGS.early_stopping, FLAGS.max_degree)
+
 # Load data
 adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(FLAGS.dataset)
 
 # Some preprocessing
-features = preprocess_features(features)
+features = preprocess_features(features) # normalizing feature with row-normalization
 if FLAGS.model == 'gcn':
     support = [preprocess_adj(adj)]
     num_supports = 1
@@ -44,12 +46,18 @@ elif FLAGS.model == 'gcn_cheby':
     support = chebyshev_polynomials(adj, FLAGS.max_degree)
     num_supports = 1 + FLAGS.max_degree
     model_func = GCN
+elif FLAGS.model == 'gcn_khop':
+    support = k_hop_distance(adj, FLAGS.max_degree, FLAGS.dataset)
+    num_supports = 1 + FLAGS.max_degree
+    model_func = GCN
 elif FLAGS.model == 'dense':
     support = [preprocess_adj(adj)]  # Not used
     num_supports = 1
     model_func = MLP
 else:
     raise ValueError('Invalid argument for model: ' + str(FLAGS.model))
+
+# debugPrint(support, num_supports, model_func)
 
 # Define placeholders
 placeholders = {
@@ -61,8 +69,10 @@ placeholders = {
     'num_features_nonzero': tf.placeholder(tf.int32)  # helper variable for sparse dropout
 }
 
+# debugPrint(placeholders['dropout'], placeholders['support'], features[2][1])
+
 # Create model
-model = model_func(placeholders, input_dim=features[2][1], logging=True)
+model = model_func(placeholders, input_dim=features[2][1], logging=True)     # features[2][1] = 1433 for cora
 
 # Initialize session
 sess = tf.Session()
@@ -86,7 +96,7 @@ for epoch in range(FLAGS.epochs):
 
     t = time.time()
     # Construct feed dictionary
-    feed_dict = construct_feed_dict(features, support, y_train, train_mask, placeholders)
+    feed_dict = construct_feed_dict(features, support, y_train, train_mask, placeholders)  # support = a list of 4 matrix (for degree 3) sized 2708*2708 (for cora) calculated using the chebyshev_polynomials
     feed_dict.update({placeholders['dropout']: FLAGS.dropout})
 
     # Training step

@@ -41,7 +41,7 @@ class Model(object):
             self._build()
 
         # Build sequential layer model
-        self.activations.append(self.inputs)
+        self.activations.append(self.inputs)    # appends feature matrix
         for layer in self.layers:
             hidden = layer(self.activations[-1])
             self.activations.append(hidden)
@@ -136,7 +136,7 @@ class GCN(Model):
         self.inputs = placeholders['features']
         self.input_dim = input_dim
         # self.input_dim = self.inputs.get_shape().as_list()[1]  # To be supported in future Tensorflow versions
-        self.output_dim = placeholders['labels'].get_shape().as_list()[1]
+        self.output_dim = placeholders['labels'].get_shape().as_list()[1] # 7 for cora
         self.placeholders = placeholders
 
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
