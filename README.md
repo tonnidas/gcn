@@ -11,11 +11,11 @@ Thomas Kipf, [Graph Convolutional Networks](http://tkipf.github.io/graph-convolu
 ## Installation
 
 ```bash
-python setup.py install
+conda create -n gcn tensorflow networkx
 ```
 
 ## Requirements
-* tensorflow (>0.12)
+* tensorflow (>=2.12.0)
 * networkx
 
 ## Run the demo

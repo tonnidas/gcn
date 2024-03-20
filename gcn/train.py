@@ -1,11 +1,17 @@
 from __future__ import division
 from __future__ import print_function
 
-import time
-import tensorflow as tf
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-from gcn.utils import *
-from gcn.models import GCN, MLP
+import time
+import tensorflow.compat.v1 as tf
+
+from utils import *
+from models import GCN, MLP
+
+tf.get_logger().setLevel('ERROR') 
+tf.disable_eager_execution()
 
 # Set random seed
 seed = 123
